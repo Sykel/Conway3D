@@ -7,40 +7,56 @@ public class GameManager : MonoBehaviour {
     public int size;
     public GameObject globalCube;
 
+
+	private Dictionary<string, GameObject> cellIdToCellMap = new Dictionary<string, GameObject>();
+
     // Use this for initialization
     void Start()
     {
-        GameObject[,,] cubeList = new GameObject[size, size, size];
         for (int i = 0; i < size; i++)
         {
             for (int j = 0; j < size; j++)
             {
                 for (int k = 0; k < size; k++)
                 {
-                    GameObject thisCube = (GameObject)Instantiate(globalCube);
-                    thisCube.transform.position = new Vector3(i, j, k);
-
-                    cubeList[i, j, k] = thisCube;
-                    //thisCube.GetComponent<Neighbour>();
+					createCube (i, j, k, Random.Range(0,5) == 1);
                 }
             }
         }
-
-        for (int i = 0; i < size; i++)
-        {
-            for (int j = 0; j < size; j++)
-            {
-                for (int k = 0; k < size; k++)
-                {
-                    // Get neighbours
-                    GetNeighbours(i, j, k, cubeList);
-
-                }
-            }
-        }
+		List<GameObject> cells = new List<GameObject>(cellIdToCellMap.Values);
+		foreach (var gameObject in cells) {
+			var cube = gameObject.GetComponent<Cube> ();
+			if (cube.isAlive ()) {
+				makeSureNeighborsExist (cube.x, cube.y, cube.z);
+			}
+		}
     }
 
-    private static void GetNeighbours(int x, int y, int z, GameObject[,,] cubeList)
+	GameObject createCube (int x, int y, int z, bool isAlive)
+	{
+		GameObject thisCube = (GameObject)Instantiate (globalCube);
+		thisCube.transform.position = new Vector3 (x, y, z);
+
+		var thisCubeAsACube = thisCube.GetComponent<Cube> ();
+		thisCubeAsACube.setCoordinate (x, y, z);
+		thisCubeAsACube.enabled = true;
+		if (isAlive) {
+			thisCubeAsACube.becomeAlive ();
+		}
+		else {
+			thisCubeAsACube.becomeDead ();
+		}
+
+		cellIdToCellMap.Add (getHashOfIndex (x,y,z), thisCube);
+		return thisCube;
+	}
+
+	string getHashOfIndex (int i, int j, int k)
+	{
+		return i + "," + j + "," + k;
+	}
+
+	public List<GameObject> GetLivingNeighbours(int x, int y, int z)
     {
         List<GameObject> neighbours = new List<GameObject>();
         for (int i = -1; i <= 1; i++)
@@ -49,32 +65,45 @@ public class GameManager : MonoBehaviour {
             {
                 for (int k = -1; k <= 1; k++)
                 {
-
                     if (i == 0 && j == 0 && k == 0)
                     {
                         continue;
                     }
-                    AddNeighbour(x + i, y + j, z + k, cubeList, neighbours);
-                    //Debug.Log("Adding neighbour to " + x + " " + y + " " + z + " " + i + " " + j + " " + k);
+					GameObject potentialNeighbour = null;
+					if (cellIdToCellMap.TryGetValue(getHashOfIndex (x + i, y + j, z + k), out potentialNeighbour)) {
+						if (potentialNeighbour.GetComponent<Cube> ().isAlive ()) {
+							neighbours.Add (potentialNeighbour);
+						}
+					}
                 }
             }
         }
-        cubeList[x, y, z].GetComponent<Cube>().setNeighbours(neighbours);
-                    
-
+		return neighbours;
     }
 
-    private static void AddNeighbour(int i, int j, int k, GameObject[,,] cubeList, List<GameObject> neighbours)
-    {
+	public void makeSureNeighborsExist (int x, int y, int z)
+	{
+		for (int i = -1; i <= 1; i++)
+		{
+			for (int j = -1; j <= 1; j++)
+			{
+				for (int k = -1; k <= 1; k++)
+				{
+					if (i == 0 && j == 0 && k == 0)
+					{
+						continue;
+					}
 
-        try { neighbours.Add(cubeList[i, j, k]);
-            //Debug.Log("I DID ADD A NEIGHBOUR");
-        }
-        catch { }
-    }
+					if (!cellIdToCellMap.ContainsKey(getHashOfIndex (x + i, y + j, z + k))) {
+						cellIdToCellMap [getHashOfIndex (x + i, y + j, z + k)] = createCube (x + i, y + j, z + k, false);
+					}
+				}
+			}
+		}
+	}
 
-    // Update is called once per frame
-    void Update () {
-	
+	public void removeMe (int x, int y, int z)
+	{
+		cellIdToCellMap.Remove(getHashOfIndex(x,y,z));
 	}
 }
