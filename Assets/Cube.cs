@@ -2,7 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System;
-
 public class Cube : MonoBehaviour
 {
 
@@ -13,6 +12,11 @@ public class Cube : MonoBehaviour
 
     private int counter;
     private int speed;
+
+    public  int aliveMinimum = 1;
+    public int aliveMaximum = 2;
+    public int deadMinimum = 4;
+    public int deadMaximum = 4;
 
     public void setNeighbours(List<GameObject> neighboursList)
     {
@@ -26,71 +30,34 @@ public class Cube : MonoBehaviour
         meshRenderer.enabled = UnityEngine.Random.Range(0, 2) == 1;
         counter = 0;
         speed = 5;
-
+        InvokeRepeating ("checkLife", .2f + UnityEngine.Random.Range (.01f, .1f), .2f + UnityEngine.Random.Range (.01f, .1f));
     }
 
-    // Update is called once per frame
-    void Update()
-    {
+    public void checkLife() {
+        int numNeighbours = getNumNeighbours(neighbors);
 
-        if (Input.GetKeyDown(KeyCode.R))
+        if (meshRenderer.enabled == false)
         {
-            GetComponent<Renderer>().material.color = Color.red;
-        }
-        if (Input.GetKeyDown(KeyCode.G))
-        {
-            GetComponent<Renderer>().material.color = Color.green;
-        }
-        if (Input.GetKeyDown(KeyCode.B))
-        {
-            GetComponent<Renderer>().material.color = Color.blue;
-        }
-        if (Input.GetKeyDown(KeyCode.A))
-        {
-            speed--;
-        }
-
-        if (counter < speed)
-        {
-            counter++;
-            return;
-        }
-
-        counter = 0;
-        //if (Input.GetKeyUp(KeyCode.M))
-        //{
-            int aliveMinimum = 1;
-            int aliveMaximum = 2;
-            int deadMinimum = 4;
-            int deadMaximum = 4;
-
-            int numNeighbours = getNumNeighbours(neighbors);
-
-            if (meshRenderer.enabled == false)
+            if (deadMinimum <= numNeighbours && numNeighbours <= deadMaximum)
             {
-                if (deadMinimum <= numNeighbours && numNeighbours <= deadMaximum)
-                {
-                    meshRenderer.enabled = true;
-                }
-                else
-                {
-                    meshRenderer.enabled = false;
-                }
+                meshRenderer.enabled = true;
             }
             else
             {
-                if (aliveMinimum <= numNeighbours && numNeighbours <= aliveMaximum)
-                {
-                    meshRenderer.enabled = true;
-                }
-                else
-                {
-                    meshRenderer.enabled = false;
-                }
+                meshRenderer.enabled = false;
             }
-
-            //meshRenderer.enabled = Random.Range(0, 2) == 1;
-        //}
+        }
+        else
+        {
+            if (aliveMinimum <= numNeighbours && numNeighbours <= aliveMaximum)
+            {
+                meshRenderer.enabled = true;
+            }
+            else
+            {
+                meshRenderer.enabled = false;
+            }
+        }
     }
 
     private int getNumNeighbours(List<GameObject> neighbors)
